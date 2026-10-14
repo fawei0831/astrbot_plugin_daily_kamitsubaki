@@ -9,17 +9,19 @@ from astrbot.api.star import Star, register
 import astrbot.api.message_components as Comp
 
 from .catalog import Catalog
+from .cover_cache import prune_cache, save_cover, touch_cover
 
 DATA = Path('/AstrBot/data/plugin_data/astrbot_plugin_daily_kamitsubaki')
 VIEW_URL = 'https://api.bilibili.com/x/web-interface/view'
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36', 'Referer': 'https://www.bilibili.com/'}
 
 
-@register('astrbot_plugin_daily_kamitsubaki', 'JXMc', '今日神椿：B站歌曲与封面推荐', '1.0.0')
+@register('astrbot_plugin_daily_kamitsubaki', 'JXMc', '今日神椿：B站歌曲与封面推荐', '1.0.1')
 class DailyKamitsubaki(Star):
     def __init__(self, context):
         super().__init__(context)
         DATA.mkdir(parents=True, exist_ok=True)
+        prune_cache(DATA / 'covers')
         self.catalog = Catalog(Path(__file__).with_name('catalog.json'), DATA / 'history.db')
         self.locks = weakref.WeakValueDictionary()
         self.media_lock = asyncio.Lock()
@@ -28,9 +30,11 @@ class DailyKamitsubaki(Star):
     async def cover(self, bvid):
         path = DATA / 'covers' / (bvid + '.jpg')
         if path.is_file():
+            touch_cover(path)
             return path
         async with self.media_lock:
             if path.is_file():
+                touch_cover(path)
                 return path
             async with aiohttp.ClientSession(headers=HEADERS, timeout=aiohttp.ClientTimeout(total=12)) as session:
                 async with session.get(VIEW_URL, params={'bvid': bvid}) as response:
@@ -49,9 +53,10 @@ class DailyKamitsubaki(Star):
                     content = await response.read()
                 if len(content) < 1024:
                     raise ValueError('B站封面不完整')
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_bytes(content)
-                return path
+                cached = save_cover(path, content)
+                if cached is None:
+                    raise ValueError('封面超过缓存大小限制或缓存已清理')
+                return cached
 
     @filter.command('今日神椿')
     async def daily(self, event: AstrMessageEvent):
