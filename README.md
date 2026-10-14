@@ -1,2 +1,14 @@
-# astrbot_plugin_daily_kamitsubaki
-今日神椿：AstrBot 独立插件，B站封面、歌曲与歌手，各会话七天不重复。
+# 今日神椿
+
+独立 AstrBot 插件，群聊 @Bot 今日神椿，私聊发送 今日神椿。
+
+曲库来自神椿观测站公开歌曲资料，仅采用条目明确标注的B站BV号。封面来自对应B站视频并缓存到本地。每次一首，先随机有可抽歌曲的歌手，再随机歌曲。各平台、各群和每位私聊用户独立记录；成功发送后连续168小时不重复。同一歌手同一首歌的现场版和Remix共用冷却。
+
+资料来源：https://kamitsubaki.wiki/zh/ ，https://github.com/LinkTh1rsty/kamitsubaki-wiki-site 。资料文字遵循原站CC BY-NC-SA 4.0，音视频和封面归原权利人。未复制歌词。
+
+catalog.json是从网站公开歌曲文件提取的本地快照；资料站没有B站来源的条目不抽取。封面或平台图片发送失败时降级文字。
+
+## 安装与更新
+在 AstrBot 插件页面选择从链接安装，填写 https://github.com/fawei0831/astrbot_plugin_daily_kamitsubaki 。后续在插件页面检查更新。
+
+首版曲库21首：花譜10首、V.W.P11首。曲库为资料站快照，当前没有自动同步任务。
