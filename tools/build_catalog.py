@@ -190,6 +190,8 @@ def collect(args):
 
 def match(args):
     songs, videos = read(args.work / 'songs.json'), read(args.work / 'videos.json')
+    review_path = args.work / 'review.json'
+    previous = {(r['song_id'], r['bvid']): r for r in read(review_path)} if review_path.exists() else {}
     candidates = []
     for song in songs:
         if song['bvid']:
@@ -208,7 +210,11 @@ def match(args):
                 candidates.append(dict(song_id=song['id'], song=song['title'], artist=song['artist'],
                     bvid=v['bvid'], video_title=v['title'], cover_url=v.get('cover_url', ''),
                     match='exact-title' if exact else 'needs-review', approved=False))
-    write(args.work / 'review.json', candidates)
+    for item in candidates:
+        old = previous.get((item['song_id'], item['bvid']), {})
+        if old.get('decision') in ('approve', 'reject'):
+            item.update(decision=old['decision'], approved=old.get('approved', False))
+    write(review_path, candidates)
     print(json.dumps({'candidates': len(candidates), 'auto_approved': 0}))
 
 

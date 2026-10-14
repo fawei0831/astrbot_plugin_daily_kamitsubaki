@@ -38,6 +38,8 @@ class Catalog:
             recent = {row[0] for row in conn.execute("SELECT song_key FROM history WHERE session=? AND sent_at>?", (session, now - COOLDOWN))}
         by_artist = {}
         for song in self.songs:
+            if song.get('disabled', False):
+                continue
             if song_key(song) not in recent:
                 for artist in song["artist"].split(" / "):
                     by_artist.setdefault(artist, {}).setdefault(song_key(song), []).append(song)

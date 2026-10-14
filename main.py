@@ -1,5 +1,6 @@
 import asyncio
 import weakref
+import shutil
 from pathlib import Path
 
 import aiohttp
@@ -10,19 +11,33 @@ import astrbot.api.message_components as Comp
 
 from .catalog import Catalog
 from .cover_cache import prune_cache, save_cover, touch_cover
+from .management import Management
 
 DATA = Path('/AstrBot/data/plugin_data/astrbot_plugin_daily_kamitsubaki')
 VIEW_URL = 'https://api.bilibili.com/x/web-interface/view'
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36', 'Referer': 'https://www.bilibili.com/'}
 
 
-@register('astrbot_plugin_daily_kamitsubaki', 'JXMc', '今日神椿：B站歌曲与封面推荐', '1.0.1')
+@register('astrbot_plugin_daily_kamitsubaki', 'JXMc', '今日神椿：B站歌曲与封面推荐', '1.1.0')
 class DailyKamitsubaki(Star):
     def __init__(self, context):
         super().__init__(context)
         DATA.mkdir(parents=True, exist_ok=True)
         prune_cache(DATA / 'covers')
-        self.catalog = Catalog(Path(__file__).with_name('catalog.json'), DATA / 'history.db')
+        catalog_path = DATA / 'catalog.json'
+        if not catalog_path.exists():
+            shutil.copyfile(Path(__file__).with_name('catalog.json'), catalog_path)
+        self.catalog = Catalog(catalog_path, DATA / 'history.db')
+        self.management = Management(self, DATA)
+        for route, handler, methods in (
+            ('stats', self.management.stats, ['GET']),
+            ('songs', self.management.songs, ['GET']),
+            ('job/start', self.management.start, ['POST']),
+            ('job/stop', self.management.stop, ['POST']),
+            ('review', self.management.decide, ['POST']),
+            ('songs/<song_id>/update', self.management.toggle, ['POST']),
+        ):
+            context.register_web_api('/astrbot_plugin_daily_kamitsubaki/' + route, handler, methods, '今日神椿曲库管理')
         self.locks = weakref.WeakValueDictionary()
         self.media_lock = asyncio.Lock()
         logger.info('独立今日神椿已加载：%s 首B站歌曲', len(self.catalog.songs))
@@ -93,3 +108,6 @@ class DailyKamitsubaki(Star):
                 return
             self.catalog.record(session, song)
             logger.info('今日神椿发送成功：%s / %s / %s', song['title'], song['artist'], song['bvid'])
+
+    async def terminate(self):
+        await self.management.terminate()

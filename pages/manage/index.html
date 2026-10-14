@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>今日神椿 · 曲库管理</title><link rel="stylesheet" href="./style.css?v=1.1.0"></head>
+<body><main>
+<header><div><p class="eyebrow">今日神椿 / 曲库管理</p><h1>让下一首歌，来自神椿。</h1><p class="muted">在云服务器整理歌曲，审核后加入正式曲库。</p></div><button id="refresh">刷新</button></header>
+<div id="notice" role="status" hidden></div>
+<section class="stats" aria-label="曲库概况"><article><span>正式曲库</span><strong id="total">—</strong></article><article><span>已启用歌曲</span><strong id="enabled">—</strong></article><article><span>歌曲资料索引</span><strong id="index">—</strong></article><article><span>待审核候选</span><strong id="pending">—</strong></article></section>
+<section class="panel job"><div class="job-head"><div><h2>补充 B站曲库</h2><p class="muted">串行低频请求 · 缓存与断点续跑 · 遇到访问限制即暂停</p></div><div class="actions"><button class="primary" id="start">运行补曲任务</button><button id="stop" disabled>停止任务</button></div></div><div id="job-status">正在读取任务状态…</div><details><summary>任务日志</summary><pre id="logs">暂无任务记录</pre></details><p class="footnote">每次最多 10 次请求，间隔至少 8 秒。结果先进入候选清单，不会自动加入正式曲库。</p></section>
+<section class="panel"><div class="list-head"><h2>歌曲管理</h2><div class="filters"><select id="mode" aria-label="列表类型"><option value="catalog">正式曲库</option><option value="missing">待补充资料</option><option value="review">待审核候选</option></select><input id="search" type="search" placeholder="搜索歌名、歌手或BV号" aria-label="搜索歌曲"></div></div><div class="table-wrap"><table><thead><tr><th>歌曲 / 视频</th><th>歌手</th><th>B站视频</th><th>状态</th><th>操作</th></tr></thead><tbody id="rows"></tbody></table></div><footer><span id="count">正在加载…</span><div class="actions"><button id="prev">上一页</button><button id="next">下一页</button></div></footer></section>
+<p class="footnote">每个会话连续七天不重复，封面缓存上限 50 MiB。停用歌曲不会删除推荐历史。歌曲资料来自神椿观测站。</p>
+</main><script src="./app.js?v=1.1.0"></script></body></html>
