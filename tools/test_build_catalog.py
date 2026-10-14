@@ -7,7 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from build_catalog import Client, StopCollection, collect, export, match, read, write
+from build_catalog import Client, StopCollection, collect, export, match, read, write, wbi_params
 
 
 class Opener:
@@ -24,6 +24,25 @@ class Opener:
 
 
 class Tests(unittest.TestCase):
+    def test_wbi_known_vector(self):
+        result = wbi_params({'foo': '114', 'bar': '514', 'zab': 1919810},
+            '7cd084941338484aae1ad9425b84077c', '4932caff0ff746eab6f01bf08b70ac45', 1702204169)
+        self.assertEqual(result['w_rid'], '8f6f2b5b3d485fe1886cec6a0be8c5d4')
+
+    def test_signed_page_cache_and_pause(self):
+        nav = {'code': -101, 'data': {'wbi_img': {
+            'img_url': 'https://i0.hdslb.com/bfs/wbi/7cd084941338484aae1ad9425b84077c.png',
+            'sub_url': 'https://i0.hdslb.com/bfs/wbi/4932caff0ff746eab6f01bf08b70ac45.png'}}}
+        op = Opener([nav, {'code': 0, 'data': {'list': {'vlist': []}}}])
+        c = self.client(op)
+        c.space_page('123', 1)
+        c.sleep(10)
+        c.space_page('123', 1)
+        self.assertEqual(op.calls, 2)
+        c.put_state('paused_until', c.clock() + 86400)
+        with self.assertRaises(StopCollection): c.space_page('123', 2)
+        self.assertEqual(op.calls, 2)
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
@@ -77,9 +96,11 @@ class Tests(unittest.TestCase):
             return {'code':0,'data':{'list':{'vlist':[{'bvid':bvid,'title':'Song','mid':123,'pic':''}]},'page':{'count':60}}}
         args = SimpleNamespace(work=self.root, channels=channels, max_requests=1, interval=8)
         first = Opener([page('BV1234567890')]); c = self.client(first, budget=1)
+        c.space_page = lambda mid, pn: c.get('/test', {'mid': mid, 'pn': pn})
         with patch('build_catalog.Client', return_value=c): collect(args)
         self.assertEqual(first.calls, 1)
         second = Opener([page('BV1234567891')]); c = self.client(second, budget=1)
+        c.space_page = lambda mid, pn: c.get('/test', {'mid': mid, 'pn': pn})
         with patch('build_catalog.Client', return_value=c): collect(args)
         self.assertEqual(second.calls, 1)
         self.assertEqual(len(read(self.root/'videos.json')), 2)

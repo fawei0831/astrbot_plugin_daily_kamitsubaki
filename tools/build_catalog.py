@@ -2,6 +2,7 @@
 import argparse
 import html
 import gzip
+import hashlib
 import json
 import re
 import sqlite3
@@ -14,6 +15,21 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BV = re.compile(r"BV[0-9A-Za-z]{10}\Z")
+WBI_ORDER = (46,47,18,2,53,8,23,32,15,50,10,31,58,3,45,35,27,43,5,49,33,9,42,19,29,28,14,39,12,38,41,13,37,48,7,16,24,55,40,61,26,17,0,1,60,51,30,4,22,25,54,21,56,59,6,63,57,62,11,36,20,34,44,52)
+
+
+def wbi_params(params, img_key, sub_key, timestamp):
+    """公开 WBI 参数签名；不注入账号凭据或设备指纹。"""
+    raw = img_key + sub_key
+    if len(raw) != 64 or not re.fullmatch('[0-9a-fA-F]{64}', raw):
+        raise StopCollection('WBI公钥格式变化，停止本轮。')
+    mixin = ''.join(raw[i] for i in WBI_ORDER)[:32]
+    clean = {k: ''.join(c for c in str(v) if c not in "!'()*")
+             for k, v in params.items() if k not in ('w_rid', 'wts')}
+    clean['wts'] = str(int(timestamp))
+    query = urllib.parse.urlencode(sorted(clean.items()))
+    clean['w_rid'] = hashlib.md5((query + mixin).encode()).hexdigest()
+    return clean
 ARTISTS = {
     'kaf': '花譜', 'rim': '理芽', 'harusaruhi': '春猿火',
     'isekaijoucho': 'ヰ世界情緒', 'koko': '幸祜', 'asu': '明透',
@@ -68,10 +84,12 @@ class Client:
         self.put_state('paused_until', self.clock() + max(86400, seconds))
         raise StopCollection(reason + '；已暂停至少24小时，不自动重试。')
 
-    def get(self, endpoint, params):
+    def get(self, endpoint, params, *, nav=False):
         url = 'https://api.bilibili.com' + endpoint + '?' + urllib.parse.urlencode(params)
-        row = self.db.execute('SELECT body,at FROM cache WHERE url=?', (url,)).fetchone()
-        if row and self.clock() - row[1] < 7 * 86400:
+        cache_url = 'https://api.bilibili.com' + endpoint + '?' + urllib.parse.urlencode(
+            sorted((k, v) for k, v in params.items() if k not in ('wts', 'w_rid')))
+        row = self.db.execute('SELECT body,at FROM cache WHERE url=?', (cache_url,)).fetchone()
+        if row and self.clock() - row[1] < (3600 if nav else 7 * 86400):
             return json.loads(row[0])
         if self.state('paused_until') > self.clock():
             raise StopCollection('上次触发风控，仍在暂停期；本次未发送网络请求。')
@@ -101,13 +119,33 @@ class Client:
         if not isinstance(payload, dict):
             self.pause('接口返回格式异常')
         code = payload.get('code')
+        # nav 未登录时 code=-101，但仍可能提供公开 wbi_img。
+        if nav and code in (0, -101) and isinstance(payload.get('data'), dict):
+            if isinstance(payload['data'].get('wbi_img'), dict):
+                self.db.execute('INSERT OR REPLACE INTO cache VALUES (?,?,?)', (cache_url, body, self.clock()))
+                self.db.commit()
+                return payload
         if code in (-352, -412, -429, -403, -101, -401):
             self.pause('B站访问限制 ' + str(code))
         if code != 0 or not isinstance(payload.get('data'), dict):
             self.pause('接口返回异常 ' + str(code))
-        self.db.execute('INSERT OR REPLACE INTO cache VALUES (?,?,?)', (url, body, self.clock()))
+        self.db.execute('INSERT OR REPLACE INTO cache VALUES (?,?,?)', (cache_url, body, self.clock()))
         self.db.commit()
         return payload
+
+    def space_page(self, mid, page):
+        # 暂停检查先于 nav，避免为取签名公钥而绕过已有暂停。
+        if self.state('paused_until') > self.clock():
+            raise StopCollection('上次触发风控，仍在暂停期；本次未发送网络请求。')
+        if not hasattr(self, '_wbi_keys'):
+            images = self.get('/x/web-interface/nav', {}, nav=True)['data']['wbi_img']
+            try:
+                self._wbi_keys = tuple(Path(urllib.parse.urlparse(images[k]).path).stem
+                                       for k in ('img_url', 'sub_url'))
+            except (KeyError, TypeError) as exc:
+                raise StopCollection('WBI公钥结构变化，停止本轮。') from exc
+        params = wbi_params({'mid': mid, 'pn': page, 'ps': 30}, *self._wbi_keys, self.clock())
+        return self.get('/x/space/wbi/arc/search', params)
 
 
 def wiki(args):
@@ -157,7 +195,7 @@ def collect(args):
                 continue
             page = int(client.state(key)) or 1
             while True:
-                payload = client.get('/x/space/arc/search', {'mid': channel['mid'], 'pn': page, 'ps': 30})
+                payload = client.space_page(channel['mid'], page)
                 data = payload['data']
                 items = data.get('list', {}).get('vlist')
                 if not isinstance(items, list) or not isinstance(data.get('page', {}).get('count'), int):
