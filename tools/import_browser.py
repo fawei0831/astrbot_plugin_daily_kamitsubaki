@@ -13,10 +13,19 @@ def import_files(paths, work, channels=None):
     artists = {str(c['mid']): c['artist'] for c in channels}
     incoming = {}
     # 全部文件验证成功才写入，不让坏文件造成半次导入。
+    batches = []
     for path in paths:
         if Path(path).stat().st_size > 5 * 1024 * 1024:
             raise ValueError('清单超过5MB，请选择工具导出的单页JSON。')
         data = read(path)
+        if isinstance(data, dict) and data.get('format') == 'daily-kamitsubaki-bundle-v1':
+            parts = data.get('batches')
+            if not isinstance(parts, list) or not 0 < len(parts) <= 100:
+                raise ValueError('总清单歌手分组无效。')
+            batches.extend(parts)
+        else:
+            batches.append(data)
+    for data in batches:
         if not isinstance(data, dict) or data.get('format') != 'daily-kamitsubaki-browser-v1':
             raise ValueError('这不是今日神椿浏览器导出的清单。')
         mid = str(data.get('mid', ''))

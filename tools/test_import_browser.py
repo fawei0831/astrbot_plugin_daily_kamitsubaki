@@ -16,6 +16,7 @@ class Tests(unittest.TestCase):
                 dict(mid='488970166',bvid='BV1234567890',title='【花譜】「魔女」',cover_url='https://i0.hdslb.com/a.jpg')])
             write(file,payload)
             self.assertEqual(import_files([file],work),1)
+            write(file,dict(format='daily-kamitsubaki-bundle-v1',batches=[payload]))
             self.assertEqual(import_files([file],work),0)
             review=read(work/'review.json')
             self.assertEqual(len(review),1)
