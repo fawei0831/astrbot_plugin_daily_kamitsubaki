@@ -1,5 +1,63 @@
 [
-  {"artist": "kaf", "mid": "488970166", "evidence": "https://kamitsubaki.wiki/zh/database/artists/solo/kaf/"},
-  {"artist": "harusaruhi", "mid": "488976992", "evidence": "https://kamitsubaki.wiki/zh/database/artists/solo/harusaruhi/"},
-  {"artist": "isekaijoucho", "mid": "488978908", "evidence": "https://kamitsubaki.wiki/zh/database/artists/solo/isekaijoucho/"}
+  {
+    "artist": "kaf",
+    "mid": "488970166",
+    "evidence": "https://kamitsubaki.wiki/zh/database/artists/solo/kaf/"
+  },
+  {
+    "artist": "harusaruhi",
+    "mid": "488976992",
+    "evidence": "https://kamitsubaki.wiki/zh/database/artists/solo/harusaruhi/"
+  },
+  {
+    "artist": "isekaijoucho",
+    "mid": "488978908",
+    "evidence": "https://kamitsubaki.wiki/zh/database/artists/solo/isekaijoucho/"
+  },
+  {
+    "artist": "rim",
+    "mid": "489046950",
+    "evidence": "https://www.bilibili.com/list/2066920860?bvid=BV1hopjeEE6D&oid=113106487346340"
+  },
+  {
+    "artist": "koko",
+    "mid": "701522855",
+    "evidence": "https://www.bilibili.com/list/2066920860?bvid=BV1hopjeEE6D&oid=113106487346340"
+  },
+  {
+    "artist": "ciel",
+    "mid": "2066920860",
+    "evidence": "https://www.bilibili.com/list/2066920860?bvid=BV1hopjeEE6D&oid=113106487346340"
+  },
+  {
+    "artist": "asu",
+    "mid": "1634470651",
+    "evidence": "https://www.bilibili.com/list/2066920860?bvid=BV1hopjeEE6D&oid=113106487346340",
+    "artists": [
+      "asu",
+      "aru",
+      "albemuth"
+    ],
+    "note": "共享投稿账号，需逐条核对歌手"
+  },
+  {
+    "artist": "valis",
+    "mid": "524933572",
+    "evidence": "https://www.bilibili.com/list/2066920860?bvid=BV1hopjeEE6D&oid=113106487346340"
+  },
+  {
+    "artist": "vwp",
+    "mid": "1636327445",
+    "evidence": "https://kamitsubaki.wiki/zh/database/artists/groups/vwp/"
+  },
+  {
+    "artist": "dustcell",
+    "mid": "488979186",
+    "evidence": "https://space.bilibili.com/488979186"
+  },
+  {
+    "artist": "empty-old-city",
+    "mid": "3546660365928495",
+    "evidence": "https://www.bilibili.com/list/2066920860?bvid=BV1hopjeEE6D&oid=113106487346340"
+  }
 ]

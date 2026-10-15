@@ -209,7 +209,7 @@ def collect(args):
                     if pic.startswith('//'):
                         pic = 'https:' + pic
                     videos[v['bvid']] = dict(bvid=v['bvid'], title=html.unescape(v['title']),
-                        mid=str(channel['mid']), artist=channel['artist'], cover_url=pic,
+                        mid=str(channel['mid']), artist=channel['artist'], artists=channel.get('artists', [channel['artist']]), cover_url=pic,
                         source='https://space.bilibili.com/' + str(channel['mid']))
                 write(videos_path, list(videos.values()))
                 if page * 30 >= data['page']['count']:
@@ -238,7 +238,7 @@ def match(args):
         if len(key) < 2:
             continue
         for v in videos:
-            if v.get('artist') not in song['artists'] or not BV.fullmatch(v['bvid']):
+            if not set(v.get('artists', [v.get('artist')])).intersection(song['artists']) or not BV.fullmatch(v['bvid']):
                 continue
             if re.search(r'切片|合集|杂谈|reaction|歌回|即将|还有\d+天|公開決定|公开決定|预告|告知|teaser|trailer', v['title'], re.I):
                 continue

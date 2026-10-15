@@ -45,7 +45,7 @@ python -m unittest discover -s tools -p 'test_*.py'
 
 双击仓库根目录的 `浏览器导出工具.html`，按页面说明把导出按钮拖到Chrome书签栏。正常打开已核对歌手的投稿视频页、等待封面加载后，点击书签累积当前页，手动翻页后再点书签继续收集。最后点击面板“下载总清单”，不同歌手合并为一个JSON。进度保存在space.bilibili.com的localStorage，关闭页面仍保留；清空网站数据会丢失进度，建议中途导出备份。工具不自动翻页，不读取Cookie，不请求额外接口。清空操作保留上一份备份，面板可恢复。
 
-双击根目录的 `导入浏览器清单.cmd`，选择一个或多个下载文件。工具离线校验、去重并生成 `.catalog-work/review.json`，不修改正式曲库。命令行也可使用 `python tools/import_browser.py page1.json page2.json`。首版只接受channels.json内三个已核对账号；其他歌手需先核对账号归属。浏览器视频总数不能视作有效歌曲数；匹配结果仍需检查现场版、预告、Remix和同名歌曲。
+双击根目录的 `导入浏览器清单.cmd`，选择一个或多个下载文件。工具离线校验、去重并生成 `.catalog-work/review.json`，不修改正式曲库。命令行也可使用 `python tools/import_browser.py page1.json page2.json`。支持channels.json内11个已核对账号；明透共享账号允许匹配存流与Albemuth，但不自动确认歌手；其他歌手需先核对账号归属。浏览器视频总数不能视作有效歌曲数；匹配结果仍需检查现场版、预告、Remix和同名歌曲。
 
 如果B站拒绝访问，仍可复用 `.catalog-work/videos.json` 运行match/export。也可导入经过核对的本地视频元数据数组（不需要网络）：
 

@@ -11,6 +11,7 @@ from build_catalog import ROOT, BV, read, write, match
 def import_files(paths, work, channels=None):
     channels = read(channels or ROOT / 'tools/channels.json')
     artists = {str(c['mid']): c['artist'] for c in channels}
+    groups = {str(c['mid']): c.get('artists', [c['artist']]) for c in channels}
     incoming = {}
     # 全部文件验证成功才写入，不让坏文件造成半次导入。
     batches = []
@@ -47,7 +48,7 @@ def import_files(paths, work, channels=None):
                     or not (cover.hostname or '').endswith('.hdslb.com') or cover.username or cover.password):
                 raise ValueError('视频号、标题、账号或封面地址无效；未导入。')
             incoming[bvid] = dict(bvid=bvid, title=title, mid=mid, artist=artists[mid],
-                cover_url=cover.geturl(), source=data['source'])
+                artists=groups[mid], cover_url=cover.geturl(), source=data['source'])
     work = Path(work); work.mkdir(parents=True, exist_ok=True)
     vp = work / 'videos.json'
     existing = {v['bvid']: v for v in read(vp)} if vp.exists() else {}
