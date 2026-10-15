@@ -1,4 +1,4 @@
-(() => {
+void (() => {
   'use strict';
   const mid = location.pathname.match(/^\/(\d+)(?:\/|$)/)?.[1];
   if (location.hostname !== 'space.bilibili.com' || !mid || !/\/upload(?:\/video)?\/?$/.test(location.pathname)) {
@@ -28,7 +28,9 @@
   const href = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = href; a.download = `kamitsubaki-${mid}-${Date.now()}.json`;
-  document.body.appendChild(a); a.click(); a.remove();
+  // 不挂到网页DOM，防止站点的全局链接处理器把blob地址改写成网页跳转。
+  a.addEventListener('click', event => event.stopPropagation());
+  a.click();
   setTimeout(() => URL.revokeObjectURL(href), 30000);
   alert(`已导出当前页 ${videos.size} 条视频资料。\n这是视频数，不代表已经匹配的歌曲数。\n下一页需手动翻页，加载完成后再次点击书签。`);
 })();
