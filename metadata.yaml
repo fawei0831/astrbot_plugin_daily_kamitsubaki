@@ -1,7 +1,7 @@
 name: astrbot_plugin_daily_kamitsubaki
 display_name: 今日神椿
-desc: 从神椿观测站读取歌曲，推送B站封面、歌名、歌手和视频链接；每个会话连续七天不重复。
-version: 1.1.0
+desc: 神椿非现场曲库，官号优先、搬运补缺，推送B站封面、歌名、歌手和视频链接；每个会话连续七天不重复。
+version: 1.1.1
 author: JXMc
 
 repo: https://github.com/fawei0831/astrbot_plugin_daily_kamitsubaki

@@ -2,6 +2,7 @@ import asyncio
 import weakref
 import shutil
 from pathlib import Path
+from urllib.parse import urlparse
 
 import aiohttp
 from astrbot.api import logger
@@ -18,7 +19,7 @@ VIEW_URL = 'https://api.bilibili.com/x/web-interface/view'
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36', 'Referer': 'https://www.bilibili.com/'}
 
 
-@register('astrbot_plugin_daily_kamitsubaki', 'JXMc', '今日神椿：B站歌曲与封面推荐', '1.1.0')
+@register('astrbot_plugin_daily_kamitsubaki', 'JXMc', '今日神椿：B站歌曲与封面推荐', '1.1.1')
 class DailyKamitsubaki(Star):
     def __init__(self, context):
         super().__init__(context)
@@ -42,7 +43,7 @@ class DailyKamitsubaki(Star):
         self.media_lock = asyncio.Lock()
         logger.info('独立今日神椿已加载：%s 首B站歌曲', len(self.catalog.songs))
 
-    async def cover(self, bvid):
+    async def cover(self, bvid, cover_url=''):
         path = DATA / 'covers' / (bvid + '.jpg')
         if path.is_file():
             touch_cover(path)
@@ -52,12 +53,16 @@ class DailyKamitsubaki(Star):
                 touch_cover(path)
                 return path
             async with aiohttp.ClientSession(headers=HEADERS, timeout=aiohttp.ClientTimeout(total=12)) as session:
-                async with session.get(VIEW_URL, params={'bvid': bvid}) as response:
-                    response.raise_for_status()
-                    payload = await response.json(content_type=None)
-                if payload.get('code') != 0:
-                    raise ValueError(f"B站视频不可用：{payload.get('code')}")
-                url = payload['data']['pic']
+                parsed = urlparse(cover_url)
+                if parsed.scheme == 'https' and (parsed.hostname or '').endswith('.hdslb.com') and not parsed.username and not parsed.password:
+                    url = cover_url
+                else:
+                    async with session.get(VIEW_URL, params={'bvid': bvid}) as response:
+                        response.raise_for_status()
+                        payload = await response.json(content_type=None)
+                    if payload.get('code') != 0:
+                        raise ValueError(f"B站视频不可用：{payload.get('code')}")
+                    url = payload['data']['pic']
                 if url.startswith('//'):
                     url = 'https:' + url
                 url = url.replace('http://', 'https://', 1)
@@ -87,11 +92,11 @@ class DailyKamitsubaki(Star):
                 return
             msg = (f"🎵 今日神椿\n\n《{song['title']}》\n歌手：{song['artist']}\n"
                    f"发行：{song['date'] or '未知'}\n\n▶ Bilibili：https://www.bilibili.com/video/{song['bvid']}\n"
-                   f"资料来源：神椿观测站\n{song['source']}")
+                   f"资料来源：{song.get('source_name', '神椿观测站')}\n{song['source']}")
             try:
                 image = None
                 try:
-                    path = await self.cover(song['bvid'])
+                    path = await self.cover(song['bvid'], song.get('cover_url', ''))
                     image = Comp.Image.fromFileSystem(str(path))
                 except Exception:
                     logger.exception('今日神椿B站封面获取失败')
