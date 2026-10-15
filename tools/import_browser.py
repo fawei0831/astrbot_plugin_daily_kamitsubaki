@@ -5,13 +5,14 @@ from pathlib import Path
 from types import SimpleNamespace
 from urllib.parse import urlparse
 
-from build_catalog import ROOT, BV, read, write, match
+from build_catalog import ROOT, BV, read, write, match, video_artists
 
 
 def import_files(paths, work, channels=None):
     channels = read(channels or ROOT / 'tools/channels.json')
     artists = {str(c['mid']): c['artist'] for c in channels}
     groups = {str(c['mid']): c.get('artists', [c['artist']]) for c in channels}
+    kinds = {str(c['mid']): c.get('source_type', 'official') for c in channels}
     incoming = {}
     # 全部文件验证成功才写入，不让坏文件造成半次导入。
     batches = []
@@ -36,7 +37,7 @@ def import_files(paths, work, channels=None):
         if source.scheme != 'https' or source.netloc != 'space.bilibili.com' or source.path.rstrip('/') not in (f'/{mid}/upload', f'/{mid}/upload/video'):
             raise ValueError('清单来源与歌手账号不一致。')
         videos = data.get('videos')
-        if not isinstance(videos, list) or not 0 < len(videos) <= 1000:
+        if not isinstance(videos, list) or not 0 < len(videos) <= 10000:
             raise ValueError('清单视频数量不正确。')
         for v in videos:
             if not isinstance(v, dict):
@@ -48,7 +49,8 @@ def import_files(paths, work, channels=None):
                     or not (cover.hostname or '').endswith('.hdslb.com') or cover.username or cover.password):
                 raise ValueError('视频号、标题、账号或封面地址无效；未导入。')
             incoming[bvid] = dict(bvid=bvid, title=title, mid=mid, artist=artists[mid],
-                artists=groups[mid], cover_url=cover.geturl(), source=data['source'])
+                artists=video_artists(title, () if kinds[mid] == 'fan' or len(groups[mid]) > 1 else groups[mid]),
+                source_type=kinds[mid], cover_url=cover.geturl(), source=data['source'])
     work = Path(work); work.mkdir(parents=True, exist_ok=True)
     vp = work / 'videos.json'
     existing = {v['bvid']: v for v in read(vp)} if vp.exists() else {}

@@ -7,7 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from build_catalog import Client, StopCollection, collect, export, match, read, write, wbi_params
+from build_catalog import Client, StopCollection, collect, export, match, read, write, wbi_params, video_artists
 
 
 class Opener:
@@ -24,6 +24,18 @@ class Opener:
 
 
 class Tests(unittest.TestCase):
+    def test_official_first_fan_fallback_and_cover_singer(self):
+        self.assertEqual(video_artists('道化師ブランケット / VALIS Covered by CIEL【神椿】'), ['ciel'])
+        self.assertEqual(video_artists('曲子 covered by 琶舞'), [])
+        write(self.root/'songs.json', [dict(id=x,title=t,artist='花譜',artists=['kaf'],bvid='') for x,t in [('a','魔女'),('b','雛鳥')]])
+        write(self.root/'videos.json',[
+            dict(bvid='BV1234567890',title='「魔女」',artist='kaf',source_type='fan'),
+            dict(bvid='BV1234567891',title='「魔女」Live Ver.',artist='kaf',source_type='official'),
+            dict(bvid='BV1234567892',title='「雛鳥」',artist='kaf',source_type='fan')])
+        match(SimpleNamespace(work=self.root))
+        self.assertEqual({r['bvid'] for r in read(self.root/'preferred.json')},{'BV1234567891','BV1234567892'})
+        self.assertEqual(len(read(self.root/'review.json')),2)
+
     def test_previews_and_remix_versions_are_not_false_matches(self):
         write(self.root/'songs.json', [
             dict(id='a',title='魔女',artist='花譜',artists=['kaf'],bvid=''),

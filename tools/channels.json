@@ -59,5 +59,23 @@
     "artist": "empty-old-city",
     "mid": "3546660365928495",
     "evidence": "https://www.bilibili.com/list/2066920860?bvid=BV1hopjeEE6D&oid=113106487346340"
+  },
+  {
+    "artist": "orihime",
+    "mid": "3546832193980490",
+    "evidence": "https://www.bilibili.com/video/BV1a8GH6LETT/",
+    "source_type": "official"
+  },
+  {
+    "artist": "kakyoin",
+    "mid": "3546832122677764",
+    "evidence": "https://www.bilibili.com/video/BV1cUE4zgEVF/",
+    "source_type": "official"
+  },
+  {
+    "artist": "fan-station",
+    "mid": "1741301",
+    "evidence": "https://space.bilibili.com/1741301",
+    "source_type": "fan"
   }
 ]

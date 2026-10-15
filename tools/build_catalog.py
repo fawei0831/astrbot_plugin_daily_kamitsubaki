@@ -36,7 +36,25 @@ ARTISTS = {
     'ciel': 'CIEL', 'vwp': 'V.W.P', 'kaika': '廻花', 'valis': 'VALIS',
     'albemuth': 'Albemuth', 'aru': '存流', 'dustcell': 'DUSTCELL',
     'empty-old-city': 'Empty old City', 'awairo': 'Awairo', 'loluet': 'LOLUET',
+    'orihime': '御莉姫', 'kakyoin': '佳鏡院',
 }
+
+
+def video_artists(title, defaults=()):
+    # 翻唱者在 covered by 后；原唱名不能当作本次演唱者。
+    covered = re.search(r'cover(?:ed)?\s+by\s*(.*)', title, re.I)
+    text = covered.group(1) if covered else title
+    aliases = {a: [name] for a, name in ARTISTS.items()}
+    for a, names in {'kaf':['花谱'], 'isekaijoucho':['异世界情绪','異世界情緒','ヰ世界情绪'],
+                     'valis':['瓦利斯'], 'orihime':['御莉姬'], 'kakyoin':['佳镜院','佳境院'],
+                     'vwp':['VWP'], 'asu':['ASU'], 'rim':['RIM'], 'koko':['KOKO']}.items():
+        aliases[a].extend(names)
+    found = []
+    for artist, names in aliases.items():
+        if any(re.search((r'(?<![A-Za-z])' + re.escape(n) + r'(?![A-Za-z])') if n.isascii()
+                         else re.escape(n), text, re.I) for n in names):
+            found.append(artist)
+    return found if covered or found else list(defaults)
 
 
 def read(path):
@@ -187,6 +205,8 @@ def collect(args):
     client = Client(args.work / 'requests.sqlite', args.max_requests, args.interval)
     try:
         for channel in channels:
+            if channel.get('source_type') == 'fan':
+                continue
             if channel['artist'] not in ARTISTS or not str(channel['mid']).isdigit():
                 raise ValueError('无效的歌手或账号ID')
             key = 'page:' + str(channel['mid'])
@@ -253,12 +273,22 @@ def match(args):
             if exact or key in title_key(v['title']):
                 candidates.append(dict(song_id=song['id'], song=song['title'], artist=song['artist'],
                     bvid=v['bvid'], video_title=v['title'], cover_url=v.get('cover_url', ''),
+                    mid=v.get('mid', ''), source_type=v.get('source_type', 'official'),
                     match='exact-title' if exact else 'needs-review', approved=False))
+    # 同一首歌只保留最优来源层级，官号存在时不输出搬运站候选。
+    official = {r['song_id'] for r in candidates if r['source_type'] == 'official'}
+    candidates = [r for r in candidates if r['source_type'] == 'official' or r['song_id'] not in official]
     for item in candidates:
         old = previous.get((item['song_id'], item['bvid']), {})
         if old.get('decision') in ('approve', 'reject'):
             item.update(decision=old['decision'], approved=old.get('approved', False))
     write(review_path, candidates)
+    preferred = {}
+    for item in sorted(candidates, key=lambda r: (
+            bool(re.search(r'live|现场|現場', r['video_title'], re.I)),
+            r['match'] != 'exact-title', r['bvid'])):
+        preferred.setdefault(item['song_id'], item)
+    write(args.work / 'preferred.json', list(preferred.values()))
     print(json.dumps({'candidates': len(candidates), 'auto_approved': 0}))
 
 
