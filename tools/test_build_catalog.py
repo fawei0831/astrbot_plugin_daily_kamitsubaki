@@ -24,6 +24,17 @@ class Opener:
 
 
 class Tests(unittest.TestCase):
+    def test_previews_and_remix_versions_are_not_false_matches(self):
+        write(self.root/'songs.json', [
+            dict(id='a',title='魔女',artist='花譜',artists=['kaf'],bvid=''),
+            dict(id='b',title='魔女(制作人 Remix)',artist='花譜',artists=['kaf'],bvid='')])
+        write(self.root/'videos.json', [
+            dict(bvid='BV1234567890',title='「魔女」MV即将公开',artist='kaf'),
+            dict(bvid='BV1234567891',title='「魔女」Live Ver.',artist='kaf')])
+        match(SimpleNamespace(work=self.root))
+        review=read(self.root/'review.json')
+        self.assertEqual([(v['song_id'],v['bvid']) for v in review],[('a','BV1234567891')])
+
     def test_wbi_known_vector(self):
         result = wbi_params({'foo': '114', 'bar': '514', 'zab': 1919810},
             '7cd084941338484aae1ad9425b84077c', '4932caff0ff746eab6f01bf08b70ac45', 1702204169)

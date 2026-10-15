@@ -240,7 +240,13 @@ def match(args):
         for v in videos:
             if v.get('artist') not in song['artists'] or not BV.fullmatch(v['bvid']):
                 continue
-            if re.search(r'切片|合集|杂谈|reaction|歌回', v['title'], re.I):
+            if re.search(r'切片|合集|杂谈|reaction|歌回|即将|还有\d+天|公開決定|公开決定|预告|告知|teaser|trailer', v['title'], re.I):
+                continue
+            # 冷却可合并版本，但匹配不能把现场版当作某位制作人的Remix。
+            remix = re.search(r'[（(]([^()（）]*remix)[）)]', song['title'], re.I)
+            if remix and title_key(remix.group(1)) not in title_key(v['title']):
+                continue
+            if not remix and re.search(r'\bremix\b', v['title'], re.I):
                 continue
             quoted = re.findall(r'[「《『](.*?)[」》』]', v['title'])
             exact = any(title_key(t) == key for t in quoted) or title_key(v['title']) == key
